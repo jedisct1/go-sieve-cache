@@ -74,6 +74,20 @@ func TestCustomShardCount(t *testing.T) {
 	}
 }
 
+func TestShardCountAdjustedForSmallCapacity(t *testing.T) {
+	cache, err := NewShardedWithShards[string, string](3, 16)
+	if err != nil {
+		t.Fatalf("Failed to create cache: %v", err)
+	}
+
+	if cache.NumShards() != 3 {
+		t.Fatalf("Expected shard count 3 (trimmed to capacity), got %d", cache.NumShards())
+	}
+	if cache.Capacity() != 3 {
+		t.Fatalf("Expected total capacity 3, got %d", cache.Capacity())
+	}
+}
+
 func TestParallelAccess(t *testing.T) {
 	// Use a capacity that's a multiple of the number of shards
 	// to ensure each shard has the same capacity
