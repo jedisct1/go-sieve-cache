@@ -271,3 +271,32 @@ func TestRecommendedCapacity(t *testing.T) {
 		t.Errorf("Expected between 95-100, got %d", recommended)
 	}
 }
+
+// TestInsertNeverExceedsCapacityWhenAllVisited verifies that Insert never grows
+// the cache past its declared capacity, even when every existing entry has its
+// `visited` bit set. A single Evict() pass over an all-visited cache only clears
+// the bits without removing anything, so Insert must retry.
+func TestInsertNeverExceedsCapacityWhenAllVisited(t *testing.T) {
+	cache, err := New[string, int](2)
+	if err != nil {
+		t.Fatalf("Failed to create cache: %v", err)
+	}
+
+	cache.Insert("a", 1)
+	cache.Insert("b", 2)
+
+	// Mark every entry as visited.
+	if _, ok := cache.Get("a"); !ok {
+		t.Fatal("expected a to be present")
+	}
+	if _, ok := cache.Get("b"); !ok {
+		t.Fatal("expected b to be present")
+	}
+
+	// Without the retry, this insert would push the cache past its capacity.
+	cache.Insert("c", 3)
+
+	if cache.Len() > cache.Capacity() {
+		t.Errorf("cache size %d exceeded capacity %d", cache.Len(), cache.Capacity())
+	}
+}
